@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Venue } from "@/types/venue";
 import { CAPE_TOWN_COORDS } from "@/lib/googlePlaces";
+import { useEffect, useRef, useState } from "react";
 import { scriptLoader } from "@/utils/scriptLoader";
 
-interface MapProps {
+interface MapClientProps {
   venues: Venue[];
 }
 
@@ -15,7 +16,7 @@ declare global {
   }
 }
 
-export default function Map({ venues }: MapProps) {
+export default function MapClient({ venues }: MapClientProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -24,7 +25,7 @@ export default function Map({ venues }: MapProps) {
   useEffect(() => {
     async function initializeMap() {
       try {
-        // Fetch API key securely from backend
+        // Fetch API key
         const response = await fetch("/api/map-init");
         const data = await response.json();
 

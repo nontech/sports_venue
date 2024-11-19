@@ -79,7 +79,7 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
         className="mb-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 
                  transition-colors flex items-center gap-2"
       >
-        <span>Export to Airtable</span>
+        <span>Export to CSV</span>
         <svg
           className="w-4 h-4"
           fill="none"
@@ -99,6 +99,12 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Photos
+              </th>
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -135,17 +141,43 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
               >
                 About
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Photos
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {venues.map((venue) => (
               <tr key={venue.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4">
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {venue.photos.map((photo, index) => (
+                      <div
+                        key={index}
+                        className="relative group flex-shrink-0"
+                      >
+                        <img
+                          src={photo.url}
+                          alt={`${venue.name} photo ${index + 1}`}
+                          className="w-40 h-32 object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                        />
+                        <button
+                          id={`download-btn-${index}`}
+                          onClick={() =>
+                            handlePhotoDownload(
+                              photo.url,
+                              venue.name,
+                              index
+                            )
+                          }
+                          className="absolute inset-0 bg-black bg-opacity-50 text-white 
+                                   opacity-0 group-hover:opacity-100 transition-opacity
+                                   flex flex-col items-center justify-center text-sm rounded-lg"
+                        >
+                          <span className="text-2xl mb-1">⬇️</span>
+                          <span className="text-xs">Download</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
                     {venue.name}
@@ -158,13 +190,8 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {venue.rating ? (
-                    <div className="flex items-center text-sm">
-                      <span className="text-yellow-400">
-                        {"★".repeat(Math.round(venue.rating))}
-                      </span>
-                      <span className="ml-1 text-gray-900">
-                        ({venue.rating})
-                      </span>
+                    <div className="text-sm text-gray-900">
+                      {venue.rating.toFixed(1)}
                     </div>
                   ) : (
                     <span className="text-sm text-gray-500">
@@ -199,38 +226,6 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900 max-w-xs">
                     {venue.about}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-4 overflow-x-auto pb-2">
-                    {venue.photos.map((photo, index) => (
-                      <div
-                        key={index}
-                        className="relative group flex-shrink-0"
-                      >
-                        <img
-                          src={photo.url}
-                          alt={`${venue.name} photo ${index + 1}`}
-                          className="w-40 h-32 object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                        />
-                        <button
-                          id={`download-btn-${index}`}
-                          onClick={() =>
-                            handlePhotoDownload(
-                              photo.url,
-                              venue.name,
-                              index
-                            )
-                          }
-                          className="absolute inset-0 bg-black bg-opacity-50 text-white 
-                                   opacity-0 group-hover:opacity-100 transition-opacity
-                                   flex flex-col items-center justify-center text-sm rounded-lg"
-                        >
-                          <span className="text-2xl mb-1">⬇️</span>
-                          <span className="text-xs">Download</span>
-                        </button>
-                      </div>
-                    ))}
                   </div>
                 </td>
               </tr>
