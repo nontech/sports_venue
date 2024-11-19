@@ -12,73 +12,138 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Location
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Rating
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Type
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {venues.map((venue) => (
-            <tr key={venue.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4">
-                <div className="text-sm font-medium text-gray-900">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      {venues.map((venue) => (
+        <div
+          key={venue.id}
+          className="bg-white rounded-lg shadow-md overflow-hidden"
+        >
+          {/* Photo */}
+          <div className="relative h-48 w-full">
+            {venue.photos && venue.photos[0] ? (
+              <img
+                src={venue.photos[0].url}
+                alt={venue.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                No Image Available
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="p-4">
+            <dl className="space-y-4">
+              {/* Venue Name */}
+              <div>
+                <dt className="text-sm font-medium text-gray-500">
+                  Venue Name
+                </dt>
+                <dd className="mt-1 text-lg font-semibold text-gray-900">
                   {venue.name}
+                </dd>
+              </div>
+
+              {/* District */}
+              <div>
+                <dt className="text-sm font-medium text-gray-500">
+                  District
+                </dt>
+                <dd className="mt-1 text-gray-900">
+                  {venue.district}
+                </dd>
+              </div>
+
+              {/* Rating */}
+              <div>
+                <dt className="text-sm font-medium text-gray-500">
+                  Google Rating
+                </dt>
+                <dd className="mt-1">
+                  {venue.rating ? (
+                    <div className="flex items-center">
+                      <span className="text-yellow-400">
+                        {"★".repeat(Math.round(venue.rating))}
+                      </span>
+                      <span className="ml-1 text-gray-900">
+                        ({venue.rating})
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">
+                      No rating available
+                    </span>
+                  )}
+                </dd>
+              </div>
+
+              {/* Website */}
+              {venue.website && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">
+                    Website Link
+                  </dt>
+                  <dd className="mt-1">
+                    <a
+                      href={venue.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-700 text-sm break-all"
+                    >
+                      {venue.website}
+                    </a>
+                  </dd>
                 </div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-500">
-                  {venue.vicinity}
+              )}
+
+              {/* Google Maps */}
+              {venue.googleMapsUrl && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">
+                    Google Maps Link
+                  </dt>
+                  <dd className="mt-1">
+                    <a
+                      href={venue.googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-700 text-sm break-all"
+                    >
+                      {venue.googleMapsUrl}
+                    </a>
+                  </dd>
                 </div>
-                <div className="text-xs text-gray-400">
-                  {venue.location.lat.toFixed(4)},{" "}
-                  {venue.location.lng.toFixed(4)}
+              )}
+
+              {/* About */}
+              {venue.about && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">
+                    About
+                  </dt>
+                  <dd className="mt-1 text-gray-900 text-sm">
+                    {venue.about}
+                  </dd>
                 </div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex items-center">
-                  <span className="text-sm text-gray-900">
-                    {venue.rating ? (
-                      <>
-                        {venue.rating}{" "}
-                        <span className="text-yellow-400">★</span>
-                      </>
-                    ) : (
-                      "No rating"
-                    )}
-                  </span>
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-500">
-                  {venue.types
-                    .filter(
-                      (type) =>
-                        ![
-                          "point_of_interest",
-                          "establishment",
-                        ].includes(type)
-                    )
-                    .map((type) => type.replace("_", " "))
-                    .join(", ")}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              )}
+
+              {/* Photos Count */}
+              <div>
+                <dt className="text-sm font-medium text-gray-500">
+                  Photos
+                </dt>
+                <dd className="mt-1 text-gray-900">
+                  {venue.photos.length > 0
+                    ? `${venue.photos.length} available`
+                    : "No photos available"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

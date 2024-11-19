@@ -17,8 +17,18 @@ export default function Map({ venues }: MapProps) {
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
   });
 
-  if (loadError) return <div>Error loading maps</div>;
-  if (!isLoaded) return <div>Loading maps...</div>;
+  if (loadError)
+    return (
+      <div className="h-[400px] flex items-center justify-center bg-gray-100">
+        Error loading maps
+      </div>
+    );
+  if (!isLoaded)
+    return (
+      <div className="h-[400px] flex items-center justify-center bg-gray-100">
+        Loading maps...
+      </div>
+    );
 
   return (
     <GoogleMap

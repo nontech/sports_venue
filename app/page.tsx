@@ -1,5 +1,10 @@
 import VenuesContent from "@/components/VenuesContent";
+import ClientOnly from "@/components/ClientOnly";
 
 export default function Home() {
-  return <VenuesContent />;
+  return (
+    <ClientOnly>
+      <VenuesContent />
+    </ClientOnly>
+  );
 }
