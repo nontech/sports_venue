@@ -56,7 +56,7 @@ export default function VenuesContent() {
             onChange={(e) =>
               setSelectedType(e.target.value as VenueType)
             }
-            className="block w-full md:w-64 px-4 py-2 text-base border border-gray-300 
+            className="block w-full md:w-64 px-4 py-2 text-black border border-gray-300 
                      rounded-md shadow-sm focus:outline-none focus:ring-2 
                      focus:ring-blue-500 focus:border-blue-500 bg-white
                      capitalize"
