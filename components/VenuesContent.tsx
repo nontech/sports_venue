@@ -11,6 +11,30 @@ export default function VenuesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<VenueType>("gym");
+  const [apiKey, setApiKey] = useState<string>("");
+
+  useEffect(() => {
+    // Fetch API key
+    async function fetchApiKey() {
+      try {
+        const response = await fetch("/api/map-init");
+        const data = await response.json();
+        if (!data.apiKey) {
+          throw new Error("Failed to load API key");
+        }
+        setApiKey(data.apiKey);
+      } catch (err) {
+        console.error("Error fetching API key:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load map configuration"
+        );
+      }
+    }
+
+    fetchApiKey();
+  }, []);
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -67,10 +91,10 @@ export default function VenuesContent() {
         <div className="text-center">Loading venues...</div>
       )}
       {error && <div className="text-red-500">{error}</div>}
-      {!loading && !error && (
+      {!loading && !error && apiKey && (
         <>
           <div className="mb-8 rounded-lg overflow-hidden shadow-lg">
-            <MapClient venues={venues} />
+            <MapClient venues={venues} apiKey={apiKey} />
           </div>
           <VenuesTable venues={venues} />
         </>

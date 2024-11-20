@@ -1,41 +1,70 @@
 "use client";
 
-import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { useEffect, useState, useRef } from "react";
 import { Venue } from "@/types/venue";
 import { CAPE_TOWN_COORDS } from "@/lib/googlePlaces";
-import { useEffect, useRef, useState } from "react";
 import { scriptLoader } from "@/utils/scriptLoader";
 
 interface MapClientProps {
   venues: Venue[];
+  apiKey: string;
 }
 
-declare global {
-  interface Window {
-    google: any;
-  }
+// Define minimal types needed for the component
+interface GoogleMap {
+  setOptions(options: GoogleMapOptions): void;
+  getDiv(): Element;
 }
 
-export default function MapClient({ venues }: MapClientProps) {
+interface GoogleMapOptions {
+  center?: {
+    lat: number;
+    lng: number;
+  };
+  zoom?: number;
+  gestureHandling?: string;
+}
+
+interface GoogleMapConstructor {
+  new (element: Element, options?: GoogleMapOptions): GoogleMap;
+}
+
+interface GoogleMarkerOptions {
+  position: {
+    lat: number;
+    lng: number;
+  };
+  map: GoogleMap;
+  title?: string;
+}
+
+interface GoogleMarkerConstructor {
+  new (options: GoogleMarkerOptions): unknown;
+}
+
+interface GoogleMapsWindow extends Window {
+  google: {
+    maps: {
+      Map: GoogleMapConstructor;
+      Marker: GoogleMarkerConstructor;
+    };
+  };
+}
+
+export default function MapClient({
+  venues,
+  apiKey,
+}: MapClientProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
+  const mapRef = useRef<GoogleMap | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function initializeMap() {
       try {
-        // Fetch API key
-        const response = await fetch("/api/map-init");
-        const data = await response.json();
-
-        if (!data.apiKey) {
-          throw new Error("Failed to load API key");
-        }
-
-        // Load Google Maps script
         await scriptLoader.loadScript(
-          `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=places`
+          `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
         );
 
         setIsLoaded(true);
@@ -48,12 +77,13 @@ export default function MapClient({ venues }: MapClientProps) {
     }
 
     initializeMap();
-  }, []);
+  }, [apiKey]);
 
   useEffect(() => {
     if (isLoaded && containerRef.current && !mapRef.current) {
       // Initialize map
-      mapRef.current = new window.google.maps.Map(
+      const googleWindow = window as unknown as GoogleMapsWindow;
+      mapRef.current = new googleWindow.google.maps.Map(
         containerRef.current,
         {
           center: CAPE_TOWN_COORDS,
@@ -64,9 +94,9 @@ export default function MapClient({ venues }: MapClientProps) {
 
       // Add markers
       venues?.forEach((venue) => {
-        new window.google.maps.Marker({
+        new googleWindow.google.maps.Marker({
           position: venue.location,
-          map: mapRef.current,
+          map: mapRef.current!,
           title: venue.name,
         });
       });

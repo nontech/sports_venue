@@ -44,9 +44,14 @@ class ScriptLoader {
         this.executeCallbacks(src);
       };
 
-      script.onerror = (error) => {
+      script.onerror = (event: Event | string) => {
         this.scripts.set(src, "error");
-        this.executeCallbacks(src, error as Error);
+        const error = new Error(
+          typeof event === "string"
+            ? event
+            : `Failed to load script: ${src}`
+        );
+        this.executeCallbacks(src, error);
       };
 
       document.head.appendChild(script);

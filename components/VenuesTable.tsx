@@ -3,6 +3,7 @@
 import { Venue } from "@/types/venue";
 import { transformVenueForAirtable } from "@/utils/airtableTransform";
 import { downloadAirtableCSV } from "@/utils/exportToAirtable";
+import Image from "next/image";
 
 interface VenuesTableProps {
   venues: Venue[];
@@ -73,7 +74,7 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="max-w-[100vw] overflow-x-auto">
       <button
         onClick={handleExportToAirtable}
         className="mb-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 
@@ -95,51 +96,57 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
         </svg>
       </button>
 
-      <div className="shadow-sm border rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="shadow-sm border rounded-lg overflow-x-auto">
+        <table className="min-w-full table-fixed divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]"
               >
                 Photos
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[180px]"
               >
                 Venue Name
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px]"
               >
                 District
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]"
               >
                 Google Rating
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider flex-1"
               >
                 Website Link
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider flex-1"
               >
                 Google Maps Link
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider flex-1"
               >
                 About
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider flex-1"
+              >
+                Opening Hours
               </th>
             </tr>
           </thead>
@@ -153,11 +160,15 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
                         key={index}
                         className="relative group flex-shrink-0"
                       >
-                        <img
-                          src={photo.url}
-                          alt={`${venue.name} photo ${index + 1}`}
-                          className="w-40 h-32 object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                        />
+                        <div className="w-40 h-32 relative">
+                          <Image
+                            src={photo.url}
+                            alt={`${venue.name} photo ${index + 1}`}
+                            fill
+                            className="object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
+                        </div>
                         <button
                           id={`download-btn-${index}`}
                           onClick={() =>
@@ -211,7 +222,7 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
                     </a>
                   )}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 w-[200px]">
                   {venue.googleMapsUrl && (
                     <a
                       href={venue.googleMapsUrl}
@@ -226,6 +237,20 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900 max-w-xs">
                     {venue.about}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="max-w-[300px]">
+                    {venue.opening_hours?.hours.map(
+                      (hour: string, index: number) => (
+                        <div
+                          key={index}
+                          className="text-sm text-black"
+                        >
+                          {hour}
+                        </div>
+                      )
+                    )}
                   </div>
                 </td>
               </tr>

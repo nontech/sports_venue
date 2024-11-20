@@ -15,4 +15,7 @@ export interface Venue {
     lat: number;
     lng: number;
   };
+  opening_hours?: {
+    hours: string[];
+  };
 }

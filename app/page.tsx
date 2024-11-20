@@ -1,4 +1,3 @@
-import MapServer from "@/components/MapServer";
 import VenuesContent from "@/components/VenuesContent";
 import ClientOnly from "@/components/ClientOnly";
 

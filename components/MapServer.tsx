@@ -1,13 +1,14 @@
 import { headers } from "next/headers";
-import MapClient from "./MapClient";
+import MapClient from "@/components/MapClient";
 import { Venue } from "@/types/venue";
 
 async function getGoogleMapsKey() {
-  const host = headers().get("host");
+  const headersList = await headers();
+  const host = headersList.get("host");
   const protocol =
     process?.env.NODE_ENV === "development" ? "http" : "https";
 
-  const response = await fetch(`${protocol}://${host}/api/map`, {
+  const response = await fetch(`${protocol}://${host}/api/map-init`, {
     cache: "force-cache",
   });
   const data = await response.json();
