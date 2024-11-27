@@ -13,6 +13,7 @@ declare namespace google.maps {
     opening_hours?: {
       weekday_text?: string[];
       isOpen?: () => boolean;
+      open_now?: boolean;
     };
   }
 
@@ -46,8 +47,8 @@ declare namespace google.maps {
           fields: string[];
         },
         callback: (
-          result: google.maps.PlaceResult,
-          status: google.maps.places.PlacesServiceStatus
+          result: PlaceResult | null,
+          status: PlacesServiceStatus
         ) => void
       ): void;
     }

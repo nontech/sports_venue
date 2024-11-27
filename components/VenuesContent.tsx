@@ -49,7 +49,7 @@ export default function VenuesContent() {
 
         // Search for places
         const placesResults = await new Promise<
-          google.maps.PlaceResult[]
+          google.maps.places.PlaceResult[]
         >((resolve, reject) => {
           service.nearbySearch(
             {
@@ -58,9 +58,10 @@ export default function VenuesContent() {
               type: selectedType.toLowerCase(),
             },
             (
-              results: google.maps.PlaceResult[] | null,
+              results: google.maps.places.PlaceResult[] | null,
               status: google.maps.places.PlacesServiceStatus,
-              pagination: google.maps.places.PlaceSearchPagination | null
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              _pagination: google.maps.places.PlaceSearchPagination | null
             ) => {
               if (
                 status ===
@@ -80,16 +81,17 @@ export default function VenuesContent() {
         // Get details for each place
         const venuesWithDetails = await Promise.all(
           limitedResults.map(async (place) => {
-            if (!place.place_id) {
+            const placeId = place.place_id;
+            if (!placeId) {
               throw new Error("Place ID is missing");
             }
 
             const details =
-              await new Promise<google.maps.PlaceResult>(
+              await new Promise<google.maps.places.PlaceResult>(
                 (resolve, reject) => {
                   service.getDetails(
                     {
-                      placeId: place.place_id,
+                      placeId,
                       fields: [
                         "name",
                         "rating",
@@ -102,7 +104,7 @@ export default function VenuesContent() {
                       ],
                     },
                     (
-                      result: google.maps.PlaceResult,
+                      result: google.maps.places.PlaceResult | null,
                       status: google.maps.places.PlacesServiceStatus
                     ) => {
                       if (
@@ -124,16 +126,18 @@ export default function VenuesContent() {
               );
 
             return {
-              id: place.place_id,
+              id: placeId,
               name: place.name || "Unknown Venue",
               rating: place.rating || 0,
-              photos: (place.photos || []).map((photo) => ({
-                reference: "",
-                url: photo.getUrl({ maxWidth: 400 }) || "",
-              })),
+              photos: (place.photos || []).map(
+                (photo: google.maps.places.PlacePhoto) => ({
+                  reference: "",
+                  url: photo.getUrl({ maxWidth: 400 }) || "",
+                })
+              ),
               district: place.vicinity || "",
               website: details.website || "",
-              googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+              googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${placeId}`,
               location: {
                 lat: details.geometry?.location?.lat() || 0,
                 lng: details.geometry?.location?.lng() || 0,

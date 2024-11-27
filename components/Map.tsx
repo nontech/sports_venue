@@ -10,9 +10,8 @@ interface MapProps {
 }
 
 // Define minimal types needed for the component
-interface GoogleMap {
+interface GoogleMap extends google.maps.Map {
   setOptions(options: GoogleMapOptions): void;
-  getDiv(): Element;
 }
 
 interface GoogleMapOptions {
@@ -24,29 +23,9 @@ interface GoogleMapOptions {
   gestureHandling?: string;
 }
 
-interface GoogleMapConstructor {
-  new (element: Element, options?: GoogleMapOptions): GoogleMap;
-}
-
-interface GoogleMarkerOptions {
-  position: {
-    lat: number;
-    lng: number;
-  };
-  map: GoogleMap;
-  title?: string;
-}
-
-interface GoogleMarkerConstructor {
-  new (options: GoogleMarkerOptions): unknown;
-}
-
 interface GoogleMapsWindow extends Window {
   google: {
-    maps: {
-      Map: GoogleMapConstructor;
-      Marker: GoogleMarkerConstructor;
-    };
+    maps: typeof google.maps;
   };
 }
 

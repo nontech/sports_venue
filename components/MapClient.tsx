@@ -10,45 +10,10 @@ interface MapClientProps {
   apiKey: string;
 }
 
-// Define minimal types needed for the component
-interface GoogleMap {
-  setOptions(options: GoogleMapOptions): void;
-  getDiv(): Element;
-}
-
-interface GoogleMapOptions {
-  center?: {
-    lat: number;
-    lng: number;
-  };
-  zoom?: number;
-  gestureHandling?: string;
-}
-
-interface GoogleMapConstructor {
-  new (element: Element, options?: GoogleMapOptions): GoogleMap;
-}
-
-interface GoogleMarkerOptions {
-  position: {
-    lat: number;
-    lng: number;
-  };
-  map: GoogleMap;
-  title?: string;
-}
-
-interface GoogleMarkerConstructor {
-  new (options: GoogleMarkerOptions): unknown;
-}
-
-interface GoogleMapsWindow extends Window {
-  google: {
-    maps: {
-      Map: GoogleMapConstructor;
-      Marker: GoogleMarkerConstructor;
-    };
-  };
+declare global {
+  interface Window {
+    google: typeof google;
+  }
 }
 
 export default function MapClient({
@@ -57,7 +22,7 @@ export default function MapClient({
 }: MapClientProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const mapRef = useRef<GoogleMap | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -82,8 +47,7 @@ export default function MapClient({
   useEffect(() => {
     if (isLoaded && containerRef.current && !mapRef.current) {
       // Initialize map
-      const googleWindow = window as unknown as GoogleMapsWindow;
-      mapRef.current = new googleWindow.google.maps.Map(
+      mapRef.current = new window.google.maps.Map(
         containerRef.current,
         {
           center: CAPE_TOWN_COORDS,
@@ -94,9 +58,9 @@ export default function MapClient({
 
       // Add markers
       venues?.forEach((venue) => {
-        new googleWindow.google.maps.Marker({
+        new window.google.maps.Marker({
           position: venue.location,
-          map: mapRef.current!,
+          map: mapRef.current,
           title: venue.name,
         });
       });
