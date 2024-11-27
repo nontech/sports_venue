@@ -14,6 +14,10 @@ declare global {
   }
 }
 
+interface CachedVenues {
+  [key: string]: Venue[];
+}
+
 export default function VenuesContent() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +27,16 @@ export default function VenuesContent() {
   const [selectedCategory, setSelectedCategory] =
     useState<string>("gym");
   const [isLoading, setIsLoading] = useState(false);
+  const [cachedVenues, setCachedVenues] = useState<CachedVenues>({});
 
   useEffect(() => {
     const fetchVenues = async () => {
+      if (cachedVenues[selectedType]) {
+        setVenues(cachedVenues[selectedType]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -158,6 +169,10 @@ export default function VenuesContent() {
           })
         );
 
+        setCachedVenues((prev) => ({
+          ...prev,
+          [selectedType]: venuesWithDetails,
+        }));
         setVenues(venuesWithDetails);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -170,7 +185,7 @@ export default function VenuesContent() {
     };
 
     fetchVenues();
-  }, [selectedType]);
+  }, [selectedType, cachedVenues]);
 
   const handleSearch = useCallback(async () => {
     if (!map || !selectedCategory) return;
