@@ -1,15 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import VenuesTable from "@/components/VenuesTable";
 import MapClient from "@/components/MapClient";
 import { Venue } from "@/types/venue";
-import {
-  VenueType,
-  VENUE_TYPES,
-  CAPE_TOWN_COORDS,
-} from "@/lib/googlePlaces";
+import { CAPE_TOWN_COORDS } from "@/lib/googlePlaces";
 import { scriptLoader } from "@/utils/scriptLoader";
+import { categoryQueries } from "@/utils/categoryQueries";
 
 declare global {
   interface Window {
@@ -21,7 +18,11 @@ export default function VenuesContent() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<VenueType>("gym");
+  const [selectedType, setSelectedType] = useState<string>("Gym");
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<string>("gym");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -51,17 +52,15 @@ export default function VenuesContent() {
         const placesResults = await new Promise<
           google.maps.places.PlaceResult[]
         >((resolve, reject) => {
-          service.nearbySearch(
+          service.textSearch(
             {
+              query: categoryQueries[selectedType] || selectedType,
               location: CAPE_TOWN_COORDS,
               radius: 20000,
-              type: selectedType.toLowerCase(),
             },
             (
               results: google.maps.places.PlaceResult[] | null,
-              status: google.maps.places.PlacesServiceStatus,
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              _pagination: google.maps.places.PlaceSearchPagination | null
+              status: google.maps.places.PlacesServiceStatus
             ) => {
               if (
                 status ===
@@ -173,6 +172,60 @@ export default function VenuesContent() {
     fetchVenues();
   }, [selectedType]);
 
+  const handleSearch = useCallback(async () => {
+    if (!map || !selectedCategory) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const service = new google.maps.places.PlacesService(map);
+      const bounds = map.getBounds();
+
+      if (!bounds) return;
+
+      const center = bounds.getCenter();
+      if (!center) return;
+
+      // Get the specific query for the selected category
+      const searchQuery =
+        categoryQueries[selectedCategory] || selectedCategory;
+
+      const request = {
+        query: searchQuery,
+        location: center,
+        radius: 5000, // 5km radius
+        bounds: bounds,
+      };
+
+      const results = await new Promise<
+        google.maps.places.PlaceResult[]
+      >((resolve, reject) => {
+        service.textSearch(request, (results, status) => {
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            results
+          ) {
+            resolve(results);
+          } else {
+            reject(new Error(`Places API error: ${status}`));
+          }
+        });
+      });
+
+      // ... rest of your existing handleSearch code ...
+    } catch (err) {
+      console.error("Error fetching venues:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while fetching venues"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [map, selectedCategory]);
+
   return (
     <div>
       <div className="mb-6">
@@ -185,17 +238,14 @@ export default function VenuesContent() {
         <select
           id="venue-type"
           value={selectedType}
-          onChange={(e) =>
-            setSelectedType(e.target.value as VenueType)
-          }
+          onChange={(e) => setSelectedType(e.target.value)}
           className="block w-full md:w-64 px-4 py-2 text-black border border-gray-300 
                    rounded-md shadow-sm focus:outline-none focus:ring-2 
-                   focus:ring-blue-500 focus:border-blue-500 bg-white
-                   capitalize"
+                   focus:ring-blue-500 focus:border-blue-500 bg-white"
         >
-          {VENUE_TYPES.map((type) => (
-            <option key={type} value={type} className="capitalize">
-              {type.replace(/_/g, " ")}
+          {Object.keys(categoryQueries).map((category) => (
+            <option key={category} value={category}>
+              {category}
             </option>
           ))}
         </select>
