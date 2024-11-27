@@ -4,48 +4,155 @@ import { useEffect, useState } from "react";
 import VenuesTable from "@/components/VenuesTable";
 import MapClient from "@/components/MapClient";
 import { Venue } from "@/types/venue";
-import { VenueType, VENUE_TYPES } from "@/lib/googlePlaces";
+import {
+  VenueType,
+  VENUE_TYPES,
+  CAPE_TOWN_COORDS,
+} from "@/lib/googlePlaces";
+import { scriptLoader } from "@/utils/scriptLoader";
+
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
 
 export default function VenuesContent() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<VenueType>("gym");
-  const [apiKey, setApiKey] = useState<string>("");
-
-  useEffect(() => {
-    // Fetch API key
-    async function fetchApiKey() {
-      try {
-        const response = await fetch("/api/map-init");
-        const data = await response.json();
-        if (!data.apiKey) {
-          throw new Error("Failed to load API key");
-        }
-        setApiKey(data.apiKey);
-      } catch (err) {
-        console.error("Error fetching API key:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load map configuration"
-        );
-      }
-    }
-
-    fetchApiKey();
-  }, []);
 
   useEffect(() => {
     const fetchVenues = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `/api/venues?type=${selectedType}`
+        setError(null);
+
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key is not configured");
+        }
+
+        // Load Google Maps script
+        await scriptLoader.loadScript(
+          `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
         );
-        if (!response.ok) throw new Error("Failed to fetch venues");
-        const data = await response.json();
-        setVenues(data);
+
+        // Create a dummy map (required for PlacesService)
+        const map = new window.google.maps.Map(
+          document.createElement("div")
+        );
+        const service = new window.google.maps.places.PlacesService(
+          map
+        );
+
+        // Search for places
+        const placesResults = await new Promise<
+          google.maps.PlaceResult[]
+        >((resolve, reject) => {
+          service.nearbySearch(
+            {
+              location: CAPE_TOWN_COORDS,
+              radius: 20000,
+              type: selectedType.toLowerCase(),
+            },
+            (
+              results: google.maps.PlaceResult[] | null,
+              status: google.maps.places.PlacesServiceStatus,
+              pagination: google.maps.places.PlaceSearchPagination | null
+            ) => {
+              if (
+                status ===
+                  google.maps.places.PlacesServiceStatus.OK &&
+                results
+              ) {
+                resolve(results);
+              } else {
+                reject(new Error(`Places API error: ${status}`));
+              }
+            }
+          );
+        });
+
+        const limitedResults = placesResults.slice(0, 5);
+
+        // Get details for each place
+        const venuesWithDetails = await Promise.all(
+          limitedResults.map(async (place) => {
+            if (!place.place_id) {
+              throw new Error("Place ID is missing");
+            }
+
+            const details =
+              await new Promise<google.maps.PlaceResult>(
+                (resolve, reject) => {
+                  service.getDetails(
+                    {
+                      placeId: place.place_id,
+                      fields: [
+                        "name",
+                        "rating",
+                        "photos",
+                        "vicinity",
+                        "website",
+                        "formatted_address",
+                        "geometry",
+                        "opening_hours",
+                      ],
+                    },
+                    (
+                      result: google.maps.PlaceResult,
+                      status: google.maps.places.PlacesServiceStatus
+                    ) => {
+                      if (
+                        status ===
+                          google.maps.places.PlacesServiceStatus.OK &&
+                        result
+                      ) {
+                        resolve(result);
+                      } else {
+                        reject(
+                          new Error(
+                            `Place Details API error: ${status}`
+                          )
+                        );
+                      }
+                    }
+                  );
+                }
+              );
+
+            return {
+              id: place.place_id,
+              name: place.name || "Unknown Venue",
+              rating: place.rating || 0,
+              photos: (place.photos || []).map((photo) => ({
+                reference: "",
+                url: photo.getUrl({ maxWidth: 400 }) || "",
+              })),
+              district: place.vicinity || "",
+              website: details.website || "",
+              googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+              location: {
+                lat: details.geometry?.location?.lat() || 0,
+                lng: details.geometry?.location?.lng() || 0,
+              },
+              address: details.formatted_address || "",
+              about: "No description available",
+              opening_hours: {
+                hours: details.opening_hours?.weekday_text || [],
+              },
+              labels: [
+                details.opening_hours?.isOpen?.()
+                  ? "Open now"
+                  : "Closed",
+              ],
+            };
+          })
+        );
+
+        setVenues(venuesWithDetails);
       } catch (err) {
         console.error("Fetch error:", err);
         setError(
@@ -91,10 +198,15 @@ export default function VenuesContent() {
         <div className="text-center">Loading venues...</div>
       )}
       {error && <div className="text-red-500">{error}</div>}
-      {!loading && !error && apiKey && (
+      {!loading && !error && (
         <>
           <div className="mb-8 rounded-lg overflow-hidden shadow-lg">
-            <MapClient venues={venues} apiKey={apiKey} />
+            <MapClient
+              venues={venues}
+              apiKey={
+                process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""
+              }
+            />
           </div>
           <VenuesTable venues={venues} />
         </>

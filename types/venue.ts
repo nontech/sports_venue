@@ -1,21 +1,22 @@
 export interface Venue {
   id: string;
   name: string;
-  rating: number | null;
-  googleMapsUrl: string | null;
-  website: string | null;
-  district: string;
-  photos: {
+  rating: number;
+  photos: Array<{
     reference: string;
     url: string;
-  }[];
-  about: string | null;
-  address: string;
+  }>;
+  district: string;
+  website: string;
+  googleMapsUrl: string;
   location: {
     lat: number;
     lng: number;
   };
-  opening_hours?: {
+  address: string;
+  about: string;
+  opening_hours: {
     hours: string[];
   };
+  labels: string[];
 }

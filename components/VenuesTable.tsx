@@ -25,11 +25,8 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
         .replace(/[^a-z0-9]/gi, "_")
         .toLowerCase()}_photo_${index + 1}.jpg`;
 
-      // Use our API route to download the photo
-      const response = await fetch(
-        `/api/download-photo?url=${encodeURIComponent(url)}`
-      );
-
+      // Fetch the photo directly
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Failed to download photo");
       }
