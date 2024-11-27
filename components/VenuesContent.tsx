@@ -132,7 +132,10 @@ export default function VenuesContent() {
               photos: (place.photos || []).map(
                 (photo: google.maps.places.PlacePhoto) => ({
                   reference: "",
-                  url: photo.getUrl({ maxWidth: 400 }) || "",
+                  url:
+                    photo.getUrl?.({
+                      maxWidth: 400,
+                    }) || "",
                 })
               ),
               district: place.vicinity || "",

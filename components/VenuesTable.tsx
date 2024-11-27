@@ -25,8 +25,11 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
         .replace(/[^a-z0-9]/gi, "_")
         .toLowerCase()}_photo_${index + 1}.jpg`;
 
-      // Fetch the photo directly
-      const response = await fetch(url);
+      // Use our proxy endpoint
+      const response = await fetch(
+        `/api/photo?url=${encodeURIComponent(url)}`
+      );
+
       if (!response.ok) {
         throw new Error("Failed to download photo");
       }
@@ -49,8 +52,6 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
       if (button) button.textContent = "⬇️ Download";
     } catch (error) {
       console.error("Error downloading photo:", error);
-
-      // Show error on the button
       const button = document.getElementById(`download-btn-${index}`);
       if (button) {
         button.textContent = "Error";
@@ -77,7 +78,7 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
         className="mb-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 
                  transition-colors flex items-center gap-2"
       >
-        <span>Export to CSV</span>
+        <span>Airtable Export</span>
         <svg
           className="w-4 h-4"
           fill="none"
