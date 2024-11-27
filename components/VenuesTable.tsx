@@ -4,6 +4,7 @@ import { Venue } from "@/types/venue";
 import { transformVenueForAirtable } from "@/utils/airtableTransform";
 import { downloadAirtableCSV } from "@/utils/exportToAirtable";
 import Image from "next/image";
+import { extractDistrict } from "@/utils/addressUtils";
 
 interface VenuesTableProps {
   venues: Venue[];
@@ -194,7 +195,7 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {venue.district}
+                    {extractDistrict(venue.address)}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
