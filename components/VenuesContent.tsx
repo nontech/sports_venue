@@ -18,28 +18,31 @@ interface CachedVenues {
   [key: string]: Venue[];
 }
 
+interface PlacesResponse {
+  results: google.maps.places.PlaceResult[];
+  next_page_token?: string;
+}
+
 export default function VenuesContent() {
   const [venues, setVenues] = useState<Venue[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>("Gym");
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [selectedCategory, setSelectedCategory] =
-    useState<string>("gym");
-  const [isLoading, setIsLoading] = useState(false);
   const [cachedVenues, setCachedVenues] = useState<CachedVenues>({});
 
   useEffect(() => {
     const fetchVenues = async () => {
       if (cachedVenues[selectedType]) {
         setVenues(cachedVenues[selectedType]);
-        setLoading(false);
+        setIsInitialLoading(false);
         return;
       }
 
       try {
-        setLoading(true);
+        setIsInitialLoading(true);
         setError(null);
+        setVenues([]);
 
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
         if (!apiKey) {
@@ -59,182 +62,183 @@ export default function VenuesContent() {
           map
         );
 
-        // Search for places
-        const placesResults = await new Promise<
-          google.maps.places.PlaceResult[]
-        >((resolve, reject) => {
-          service.textSearch(
-            {
+        // Function to fetch a page of results
+        const fetchPage = async (
+          pageToken?: string
+        ): Promise<PlacesResponse> => {
+          return new Promise((resolve, reject) => {
+            const request: google.maps.places.TextSearchRequest = {
               query: categoryQueries[selectedType] || selectedType,
               location: CAPE_TOWN_COORDS,
-              radius: 20000,
-            },
-            (results, status) => {
-              if (
-                status ===
-                  google.maps.places.PlacesServiceStatus.OK &&
-                results
-              ) {
-                resolve(results);
-              } else {
-                reject(new Error(`Places API error: ${status}`));
+              radius: 35000,
+            };
+
+            if (pageToken) {
+              (request as any).pageToken = pageToken;
+            }
+
+            service.textSearch(
+              request,
+              (results, status, pagination) => {
+                if (
+                  status ===
+                    google.maps.places.PlacesServiceStatus.OK &&
+                  results
+                ) {
+                  resolve({
+                    results,
+                    next_page_token: pagination?.hasNextPage
+                      ? "next-page"
+                      : undefined,
+                  });
+                } else {
+                  reject(new Error(`Places API error: ${status}`));
+                }
               }
-            }
-          );
-        });
+            );
+          });
+        };
 
-        // Get details for each place
-        const venuesWithDetails = await Promise.all(
-          placesResults.map(async (place) => {
-            const placeId = place.place_id;
-            if (!placeId) {
-              throw new Error("Place ID is missing");
-            }
+        // Process venues in smaller batches
+        const processVenueDetails = async (
+          places: google.maps.places.PlaceResult[]
+        ) => {
+          const batchSize = 5;
 
-            const details =
-              await new Promise<google.maps.places.PlaceResult>(
-                (resolve, reject) => {
-                  service.getDetails(
-                    {
-                      placeId,
-                      fields: [
-                        "name",
-                        "rating",
-                        "photos",
-                        "vicinity",
-                        "website",
-                        "formatted_address",
-                        "geometry",
-                        "opening_hours",
-                      ],
-                    },
-                    (
-                      result: google.maps.places.PlaceResult | null,
-                      status: google.maps.places.PlacesServiceStatus
-                    ) => {
-                      if (
-                        status ===
-                          google.maps.places.PlacesServiceStatus.OK &&
-                        result
-                      ) {
-                        resolve(result);
-                      } else {
-                        reject(
-                          new Error(
-                            `Place Details API error: ${status}`
-                          )
+          for (let i = 0; i < places.length; i += batchSize) {
+            const batch = places.slice(i, i + batchSize);
+            const detailedVenues = await Promise.all(
+              batch.map(async (place) => {
+                const placeId = place.place_id;
+                if (!placeId) return null;
+
+                try {
+                  const details =
+                    await new Promise<google.maps.places.PlaceResult>(
+                      (resolve, reject) => {
+                        service.getDetails(
+                          {
+                            placeId,
+                            fields: [
+                              "website",
+                              "formatted_address",
+                              "opening_hours",
+                            ],
+                          },
+                          (result, status) => {
+                            if (
+                              status ===
+                                google.maps.places.PlacesServiceStatus
+                                  .OK &&
+                              result
+                            ) {
+                              resolve(result);
+                            } else {
+                              reject(
+                                new Error(
+                                  `Place Details API error: ${status}`
+                                )
+                              );
+                            }
+                          }
                         );
                       }
-                    }
+                    );
+
+                  return {
+                    id: placeId,
+                    name: place.name || "Unknown Venue",
+                    rating: place.rating || 0,
+                    photos: (place.photos || []).map((photo) => ({
+                      reference: "",
+                      url: photo.getUrl?.({ maxWidth: 400 }) || "",
+                    })),
+                    district: place.vicinity || "",
+                    website: details.website || "",
+                    googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${placeId}`,
+                    location: {
+                      lat: place.geometry?.location?.lat() || 0,
+                      lng: place.geometry?.location?.lng() || 0,
+                    },
+                    address:
+                      details.formatted_address ||
+                      place.formatted_address ||
+                      "",
+                    about: "No description available",
+                    opening_hours: {
+                      hours:
+                        details.opening_hours?.weekday_text || [],
+                    },
+                    labels: [
+                      details.opening_hours?.isOpen?.()
+                        ? "Open now"
+                        : "Closed",
+                    ],
+                  };
+                } catch (error) {
+                  console.error(
+                    `Error fetching details for ${place.name}:`,
+                    error
                   );
+                  return null;
                 }
+              })
+            );
+
+            // Update venues state with new batch, ensuring uniqueness by ID
+            const validVenues = detailedVenues.filter(
+              (v): v is Venue => v !== null
+            );
+            setVenues((prev) => {
+              // Convert to Map to ensure uniqueness
+              const uniqueVenues = new Map();
+
+              // Add existing venues
+              prev.forEach((venue) =>
+                uniqueVenues.set(venue.id, venue)
               );
 
-            return {
-              id: placeId,
-              name: place.name || "Unknown Venue",
-              rating: place.rating || 0,
-              photos: (place.photos || []).map(
-                (photo: google.maps.places.PlacePhoto) => ({
-                  reference: "",
-                  url:
-                    photo.getUrl?.({
-                      maxWidth: 400,
-                    }) || "",
-                })
-              ),
-              district: place.vicinity || "",
-              website: details.website || "",
-              googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${placeId}`,
-              location: {
-                lat: details.geometry?.location?.lat() || 0,
-                lng: details.geometry?.location?.lng() || 0,
-              },
-              address: details.formatted_address || "",
-              about: "No description available",
-              opening_hours: {
-                hours: details.opening_hours?.weekday_text || [],
-              },
-              labels: [
-                details.opening_hours?.isOpen?.()
-                  ? "Open now"
-                  : "Closed",
-              ],
-            };
-          })
-        );
+              // Add new venues (will overwrite if ID exists)
+              validVenues.forEach((venue) =>
+                uniqueVenues.set(venue.id, venue)
+              );
 
-        setCachedVenues((prev) => ({
-          ...prev,
-          [selectedType]: venuesWithDetails,
-        }));
-        setVenues(venuesWithDetails);
+              // Convert back to array
+              return Array.from(uniqueVenues.values());
+            });
+          }
+        };
+
+        let allResults: google.maps.places.PlaceResult[] = [];
+        let nextPageToken: string | undefined;
+
+        do {
+          if (nextPageToken) {
+            setLoadingMore(true);
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          }
+
+          const response = await fetchPage(nextPageToken);
+          allResults = [...allResults, ...response.results];
+          nextPageToken = response.next_page_token;
+
+          // Process this batch immediately
+          await processVenueDetails(response.results);
+          setLoadingMore(false);
+        } while (nextPageToken);
       } catch (err) {
         console.error("Fetch error:", err);
         setError(
           err instanceof Error ? err.message : "Something went wrong"
         );
       } finally {
-        setLoading(false);
+        setIsInitialLoading(false);
+        setLoadingMore(false);
       }
     };
 
     fetchVenues();
-  }, [selectedType, cachedVenues]);
-
-  const handleSearch = useCallback(async () => {
-    if (!map || !selectedCategory) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const service = new google.maps.places.PlacesService(map);
-      const bounds = map.getBounds();
-
-      if (!bounds) return;
-
-      const center = bounds.getCenter();
-      if (!center) return;
-
-      // Get the specific query for the selected category
-      const searchQuery =
-        categoryQueries[selectedCategory] || selectedCategory;
-
-      const request = {
-        query: searchQuery,
-        location: center,
-        radius: 5000, // 5km radius
-        bounds: bounds,
-      };
-
-      const results = await new Promise<
-        google.maps.places.PlaceResult[]
-      >((resolve, reject) => {
-        service.textSearch(request, (results, status) => {
-          if (
-            status === google.maps.places.PlacesServiceStatus.OK &&
-            results
-          ) {
-            resolve(results);
-          } else {
-            reject(new Error(`Places API error: ${status}`));
-          }
-        });
-      });
-
-      // ... rest of your existing handleSearch code ...
-    } catch (err) {
-      console.error("Error fetching venues:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "An error occurred while fetching venues"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [map, selectedCategory]);
+  }, [selectedType]);
 
   return (
     <div>
@@ -261,11 +265,9 @@ export default function VenuesContent() {
         </select>
       </div>
 
-      {loading && (
+      {isInitialLoading && venues.length === 0 ? (
         <div className="text-center">Loading venues...</div>
-      )}
-      {error && <div className="text-red-500">{error}</div>}
-      {!loading && !error && (
+      ) : (
         <>
           <div className="mb-8 rounded-lg overflow-hidden shadow-lg">
             <MapClient
@@ -276,8 +278,14 @@ export default function VenuesContent() {
             />
           </div>
           <VenuesTable venues={venues} />
+          {loadingMore && (
+            <div className="text-center mt-4 text-gray-600">
+              Loading more venues...
+            </div>
+          )}
         </>
       )}
+      {error && <div className="text-red-500">{error}</div>}
     </div>
   );
 }

@@ -108,6 +108,12 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
             <tr>
               <th
                 scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[50px]"
+              >
+                #
+              </th>
+              <th
+                scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]"
               >
                 Photos
@@ -169,8 +175,13 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {venues.map((venue) => (
+            {venues.map((venue, index) => (
               <tr key={venue.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {index + 1}
+                  </div>
+                </td>
                 <td className="px-6 py-4">
                   <div className="flex gap-4 overflow-x-auto pb-2">
                     {venue.photos.map((photo, index) => (
