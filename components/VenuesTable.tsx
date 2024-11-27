@@ -1,6 +1,7 @@
 "use client";
 
 import { Venue } from "@/types/venue";
+import { AirtableVenue } from "@/types/airtable";
 import { transformVenueForAirtable } from "@/utils/airtableTransform";
 import { downloadAirtableCSV } from "@/utils/exportToAirtable";
 import Image from "next/image";
@@ -65,7 +66,7 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
 
   const handleExportToAirtable = () => {
     const airtableData = venues.map(transformVenueForAirtable);
-    downloadAirtableCSV(airtableData);
+    downloadAirtableCSV(airtableData as AirtableVenue[]);
   };
 
   if (!venues.length) {
@@ -116,6 +117,18 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px]"
               >
                 District
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]"
+              >
+                Latitude
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]"
+              >
+                Longitude
               </th>
               <th
                 scope="col"
@@ -196,6 +209,16 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {extractDistrict(venue.address)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {venue.location.lat.toFixed(6)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {venue.location.lng.toFixed(6)}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
