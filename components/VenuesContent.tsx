@@ -69,10 +69,7 @@ export default function VenuesContent() {
               location: CAPE_TOWN_COORDS,
               radius: 20000,
             },
-            (
-              results: google.maps.places.PlaceResult[] | null,
-              status: google.maps.places.PlacesServiceStatus
-            ) => {
+            (results, status) => {
               if (
                 status ===
                   google.maps.places.PlacesServiceStatus.OK &&
@@ -86,11 +83,9 @@ export default function VenuesContent() {
           );
         });
 
-        const limitedResults = placesResults.slice(0, 5);
-
         // Get details for each place
         const venuesWithDetails = await Promise.all(
-          limitedResults.map(async (place) => {
+          placesResults.map(async (place) => {
             const placeId = place.place_id;
             if (!placeId) {
               throw new Error("Place ID is missing");

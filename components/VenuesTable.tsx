@@ -75,26 +75,32 @@ export default function VenuesTable({ venues }: VenuesTableProps) {
 
   return (
     <div className="max-w-[100vw] overflow-x-auto">
-      <button
-        onClick={handleExportToAirtable}
-        className="mb-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 
-                 transition-colors flex items-center gap-2"
-      >
-        <span>Airtable Export</span>
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={handleExportToAirtable}
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 
+                   transition-colors flex items-center gap-2"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-          />
-        </svg>
-      </button>
+          <span>Airtable Export</span>
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
+        </button>
+        <span className="text-sm text-gray-600">
+          {venues.length} {venues.length === 1 ? "venue" : "venues"}{" "}
+          found
+        </span>
+      </div>
 
       <div className="shadow-sm border rounded-lg overflow-x-auto">
         <table className="min-w-full table-fixed divide-y divide-gray-200">
