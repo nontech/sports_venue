@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import VenuesTable from "@/components/VenuesTable";
 import MapClient from "@/components/MapClient";
 import { Venue } from "@/types/venue";
@@ -21,6 +21,11 @@ interface CachedVenues {
 interface PlacesResponse {
   results: google.maps.places.PlaceResult[];
   next_page_token?: string;
+}
+
+interface ExtendedTextSearchRequest
+  extends google.maps.places.TextSearchRequest {
+  pageToken?: string;
 }
 
 export default function VenuesContent() {
@@ -67,14 +72,14 @@ export default function VenuesContent() {
           pageToken?: string
         ): Promise<PlacesResponse> => {
           return new Promise((resolve, reject) => {
-            const request: google.maps.places.TextSearchRequest = {
+            const request: ExtendedTextSearchRequest = {
               query: categoryQueries[selectedType] || selectedType,
               location: CAPE_TOWN_COORDS,
               radius: 35000,
             };
 
             if (pageToken) {
-              (request as any).pageToken = pageToken;
+              request.pageToken = pageToken;
             }
 
             service.textSearch(
@@ -98,6 +103,10 @@ export default function VenuesContent() {
             );
           });
         };
+
+        let allResults: google.maps.places.PlaceResult[] = [];
+        let nextPageToken: string | undefined;
+        const uniqueVenues = new Map<string, Venue>();
 
         // Process venues in smaller batches
         const processVenueDetails = async (
@@ -190,9 +199,6 @@ export default function VenuesContent() {
               (v): v is Venue => v !== null
             );
             setVenues((prev) => {
-              // Convert to Map to ensure uniqueness
-              const uniqueVenues = new Map();
-
               // Add existing venues
               prev.forEach((venue) =>
                 uniqueVenues.set(venue.id, venue)
@@ -209,9 +215,6 @@ export default function VenuesContent() {
           }
         };
 
-        let allResults: google.maps.places.PlaceResult[] = [];
-        let nextPageToken: string | undefined;
-
         do {
           if (nextPageToken) {
             setLoadingMore(true);
@@ -226,6 +229,13 @@ export default function VenuesContent() {
           await processVenueDetails(response.results);
           setLoadingMore(false);
         } while (nextPageToken);
+
+        // Update cache at the end of try block
+        const finalVenues = Array.from(uniqueVenues.values());
+        setCachedVenues((prev) => ({
+          ...prev,
+          [selectedType]: finalVenues,
+        }));
       } catch (err) {
         console.error("Fetch error:", err);
         setError(
@@ -238,7 +248,7 @@ export default function VenuesContent() {
     };
 
     fetchVenues();
-  }, [selectedType]);
+  }, [selectedType, cachedVenues]);
 
   return (
     <div>
