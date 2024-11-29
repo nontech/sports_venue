@@ -6,6 +6,7 @@ import { transformVenueForAirtable } from "@/utils/airtableTransform";
 import { downloadAirtableCSV } from "@/utils/exportToAirtable";
 import Image from "next/image";
 import { extractDistrict } from "@/utils/addressUtils";
+import { parseOpeningHours } from "@/utils/openingHoursUtils";
 
 interface VenuesTableProps {
   venues: Venue[];
@@ -173,131 +174,220 @@ export default function VenuesTable({
                 >
                   Opening Hours
                 </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]"
+                >
+                  Monday
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]"
+                >
+                  Tuesday
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]"
+                >
+                  Wednesday
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]"
+                >
+                  Thursday
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]"
+                >
+                  Friday
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]"
+                >
+                  Saturday
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]"
+                >
+                  Sunday
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {venues.map((venue, index) => (
-                <tr
-                  key={`${venue.id}_${index}`}
-                  className="hover:bg-gray-50"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {index + 1}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-4 overflow-x-auto pb-2">
-                      {venue.photos.map((photo, index) => (
-                        <div
-                          key={index}
-                          className="relative group flex-shrink-0"
-                        >
-                          <div className="w-40 h-32 relative">
-                            <Image
-                              src={photo.url}
-                              alt={`${venue.name} photo ${index + 1}`}
-                              fill
-                              className="object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            />
-                          </div>
-                          <button
-                            id={`download-btn-${index}`}
-                            onClick={() =>
-                              handlePhotoDownload(
-                                photo.url,
-                                venue.name,
-                                index
-                              )
-                            }
-                            className="absolute inset-0 bg-black bg-opacity-50 text-white 
-                                     opacity-0 group-hover:opacity-100 transition-opacity
-                                     flex flex-col items-center justify-center text-sm rounded-lg"
-                          >
-                            <span className="text-2xl mb-1">⬇️</span>
-                            <span className="text-xs">Download</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {venue.name}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {extractDistrict(venue.address)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {venue.location.lat.toFixed(6)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {venue.location.lng.toFixed(6)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {venue.rating ? (
+              {venues.map((venue, index) => {
+                const dailyHours = parseOpeningHours(
+                  venue.opening_hours.hours
+                );
+
+                return (
+                  <tr
+                    key={`${venue.id}_${index}`}
+                    className="hover:bg-gray-50"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {venue.rating.toFixed(1)}
+                        {index + 1}
                       </div>
-                    ) : (
-                      <span className="text-sm text-gray-500">
-                        No rating
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {venue.website && (
-                      <a
-                        href={venue.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-700 text-sm"
-                      >
-                        {venue.website}
-                      </a>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 w-[200px]">
-                    {venue.googleMapsUrl && (
-                      <a
-                        href={venue.googleMapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-700 text-sm"
-                      >
-                        {venue.googleMapsUrl}
-                      </a>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs">
-                      {venue.about}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-[300px]">
-                      {venue.opening_hours?.hours.map(
-                        (hour: string, index: number) => (
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-4 overflow-x-auto pb-2">
+                        {venue.photos.map((photo, index) => (
                           <div
                             key={index}
-                            className="text-sm text-black"
+                            className="relative group flex-shrink-0"
                           >
-                            {hour}
+                            <div className="w-40 h-32 relative">
+                              <Image
+                                src={photo.url}
+                                alt={`${venue.name} photo ${
+                                  index + 1
+                                }`}
+                                fill
+                                className="object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                              />
+                            </div>
+                            <button
+                              id={`download-btn-${index}`}
+                              onClick={() =>
+                                handlePhotoDownload(
+                                  photo.url,
+                                  venue.name,
+                                  index
+                                )
+                              }
+                              className="absolute inset-0 bg-black bg-opacity-50 text-white 
+                                       opacity-0 group-hover:opacity-100 transition-opacity
+                                       flex flex-col items-center justify-center text-sm rounded-lg"
+                            >
+                              <span className="text-2xl mb-1">
+                                ⬇️
+                              </span>
+                              <span className="text-xs">
+                                Download
+                              </span>
+                            </button>
                           </div>
-                        )
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {venue.name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {extractDistrict(venue.address)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {venue.location.lat.toFixed(6)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {venue.location.lng.toFixed(6)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {venue.rating ? (
+                        <div className="text-sm text-gray-900">
+                          {venue.rating.toFixed(1)}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">
+                          No rating
+                        </span>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4">
+                      {venue.website && (
+                        <a
+                          href={venue.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-700 text-sm"
+                        >
+                          {venue.website}
+                        </a>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 w-[200px]">
+                      {venue.googleMapsUrl && (
+                        <a
+                          href={venue.googleMapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-700 text-sm"
+                        >
+                          {venue.googleMapsUrl}
+                        </a>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs">
+                        {venue.about}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-[300px]">
+                        {venue.opening_hours?.hours.map(
+                          (hour: string, index: number) => (
+                            <div
+                              key={index}
+                              className="text-sm text-black"
+                            >
+                              {hour}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {dailyHours.Monday}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {dailyHours.Tuesday}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {dailyHours.Wednesday}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {dailyHours.Thursday}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {dailyHours.Friday}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {dailyHours.Saturday}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {dailyHours.Sunday}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
