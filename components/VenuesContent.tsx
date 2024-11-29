@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import VenuesTable from "@/components/VenuesTable";
 import MapClient from "@/components/MapClient";
 import { Venue } from "@/types/venue";
-import { CAPE_TOWN_COORDS, SEARCH_RADIUS } from "@/lib/googlePlaces";
+import {
+  CAPE_TOWN_COORDS,
+  SEARCH_RADIUS,
+  categoryQueries,
+} from "@/lib/googlePlaces";
 import { scriptLoader } from "@/utils/scriptLoader";
-import { categoryQueries } from "@/utils/categoryQueries";
 
 declare global {
   interface Window {
