@@ -32,10 +32,8 @@ VenuesTableProps) {
         .replace(/[^a-z0-9]/gi, "_")
         .toLowerCase()}_photo_${index + 1}.jpg`;
 
-      // Use our proxy endpoint
-      const response = await fetch(
-        `/api/photo?url=${encodeURIComponent(url)}`
-      );
+      // URL is already proxied, so use it directly
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error("Failed to download photo");

@@ -108,12 +108,16 @@ export default function VenuesContent() {
                 // Photos from initial search
                 ...(place.photos || []).map((photo) => ({
                   reference: "",
-                  url: photo.getUrl?.({ maxWidth: 800 }) || "",
+                  url: `/api/photo?url=${encodeURIComponent(
+                    photo.getUrl?.({ maxWidth: 800 }) || ""
+                  )}`,
                 })),
                 // Photos from details
                 ...(details.photos || []).map((photo) => ({
                   reference: "",
-                  url: photo.getUrl?.({ maxWidth: 800 }) || "",
+                  url: `/api/photo?url=${encodeURIComponent(
+                    photo.getUrl?.({ maxWidth: 800 }) || ""
+                  )}`,
                 })),
               ].filter(
                 (photo, index, self) =>
