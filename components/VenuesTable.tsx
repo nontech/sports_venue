@@ -10,13 +10,13 @@ import { parseOpeningHours } from "@/utils/openingHoursUtils";
 
 interface VenuesTableProps {
   venues: Venue[];
-  category: string;
+  // category: string;
 }
 
 export default function VenuesTable({
   venues,
-  category,
-}: VenuesTableProps) {
+}: // category,
+VenuesTableProps) {
   const handlePhotoDownload = async (
     url: string,
     venueName: string,

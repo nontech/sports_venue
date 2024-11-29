@@ -17,25 +17,25 @@ declare global {
   }
 }
 
-interface CachedVenues {
-  [category: string]: {
-    venues: Venue[];
-    lastUpdated: Date;
-  };
-}
+// interface CachedVenues {
+//   [category: string]: {
+//     venues: Venue[];
+//     lastUpdated: Date;
+//   };
+// }
 
-interface PlacesResponse {
-  results: google.maps.places.PlaceResult[];
-  next_page_token?: string;
-}
+// interface PlacesResponse {
+//   results: google.maps.places.PlaceResult[];
+//   next_page_token?: string;
+// }
 
 interface ExtendedTextSearchRequest
   extends google.maps.places.TextSearchRequest {
   pageToken?: string;
 }
 
-const wait = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+// const wait = (ms: number) =>
+//   new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function VenuesContent() {
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -43,14 +43,13 @@ export default function VenuesContent() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>("Gym");
-  const [cachedVenues, setCachedVenues] = useState<CachedVenues>({});
+  // const [cachedVenues, setCachedVenues] = useState<CachedVenues>({});
   const [pageToken, setPageToken] = useState<string | undefined>();
   const [hasNextPage, setHasNextPage] = useState(false);
   const [service, setService] =
     useState<google.maps.places.PlacesService>();
 
-  const currentCategoryCount =
-    venues.length || cachedVenues[selectedType]?.venues.length || 0;
+  const currentCategoryCount = venues.length || 0;
 
   // Process venues in smaller batches
   const processVenueDetails = async (
@@ -205,6 +204,9 @@ export default function VenuesContent() {
   };
 
   // Effect to handle initial load and category changes
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- 
+     Intentionally omitting fetchVenuePage and processVenueDetails to prevent unnecessary rerenders 
+  */
   useEffect(() => {
     let isMounted = true;
 
@@ -215,13 +217,6 @@ export default function VenuesContent() {
         setVenues([]);
         setPageToken(undefined);
         setHasNextPage(false);
-
-        // Check cache first
-        if (cachedVenues[selectedType]?.venues) {
-          setVenues(cachedVenues[selectedType].venues);
-          setIsInitialLoading(false);
-          return;
-        }
 
         // Load Google Maps if needed
         await scriptLoader.loadScript(
@@ -273,6 +268,9 @@ export default function VenuesContent() {
   }, [selectedType]);
 
   // Effect to handle pagination
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- 
+     Intentionally omitting fetchVenuePage, loadingMore, and processVenueDetails to maintain current behavior 
+  */
   useEffect(() => {
     let isMounted = true;
 
@@ -375,7 +373,11 @@ export default function VenuesContent() {
               }
             />
           </div>
-          <VenuesTable venues={venues} category={selectedType} />
+          <VenuesTable
+            venues={[...venues].sort((a, b) =>
+              a.name.localeCompare(b.name)
+            )}
+          />
           {loadingMore && (
             <div className="text-center mt-4 text-gray-600">
               Loading more venues...
