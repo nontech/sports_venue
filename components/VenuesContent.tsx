@@ -79,6 +79,7 @@ export default function VenuesContent() {
                         "website",
                         "formatted_address",
                         "opening_hours",
+                        "photos",
                       ],
                     },
                     (result, status) => {
@@ -104,10 +105,22 @@ export default function VenuesContent() {
               id: placeId,
               name: place.name || "Unknown Venue",
               rating: place.rating || 0,
-              photos: (place.photos || []).map((photo) => ({
-                reference: "",
-                url: photo.getUrl?.({ maxWidth: 400 }) || "",
-              })),
+              photos: [
+                // Photos from initial search
+                ...(place.photos || []).map((photo) => ({
+                  reference: "",
+                  url: photo.getUrl?.({ maxWidth: 800 }) || "",
+                })),
+                // Photos from details
+                ...(details.photos || []).map((photo) => ({
+                  reference: "",
+                  url: photo.getUrl?.({ maxWidth: 800 }) || "",
+                })),
+              ].filter(
+                (photo, index, self) =>
+                  // Remove duplicates based on URL
+                  index === self.findIndex((p) => p.url === photo.url)
+              ),
               district: place.vicinity || "",
               website: details.website || "",
               googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${placeId}`,

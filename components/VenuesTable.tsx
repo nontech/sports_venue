@@ -235,21 +235,22 @@ export default function VenuesTable({
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex gap-4 overflow-x-auto pb-2">
+                      <div className="grid grid-cols-3 gap-4 w-[400px]">
                         {venue.photos.map((photo, index) => (
                           <div
                             key={index}
-                            className="relative group flex-shrink-0"
+                            className="relative group"
+                            style={{ height: "100px" }}
                           >
-                            <div className="w-40 h-32 relative">
+                            <div className="w-full h-full relative rounded-lg overflow-hidden">
                               <Image
                                 src={photo.url}
                                 alt={`${venue.name} photo ${
                                   index + 1
                                 }`}
                                 fill
-                                className="object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                className="object-cover hover:scale-105 transition-transform duration-200"
+                                sizes="(max-width: 768px) 33vw, (max-width: 1200px) 25vw, 20vw"
                               />
                             </div>
                             <button
