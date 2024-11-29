@@ -2,10 +2,10 @@ export interface Venue {
   id: string;
   name: string;
   rating: number;
-  photos: Array<{
+  photos: {
     reference: string;
     url: string;
-  }>;
+  }[];
   district: string;
   website: string;
   googleMapsUrl: string;
@@ -19,4 +19,5 @@ export interface Venue {
     hours: string[];
   };
   labels: string[];
+  category: string;
 }

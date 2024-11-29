@@ -18,7 +18,10 @@ declare global {
 }
 
 interface CachedVenues {
-  [key: string]: Venue[];
+  [category: string]: {
+    venues: Venue[];
+    lastUpdated: Date;
+  };
 }
 
 interface PlacesResponse {
@@ -39,10 +42,18 @@ export default function VenuesContent() {
   const [selectedType, setSelectedType] = useState<string>("Gym");
   const [cachedVenues, setCachedVenues] = useState<CachedVenues>({});
 
+  const currentCategoryCount =
+    venues.length || // Use current venues length if available
+    cachedVenues[selectedType]?.venues.length || // Fallback to cached venues
+    0; // Default to 0 if neither is available
+
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     const fetchVenues = async () => {
-      if (cachedVenues[selectedType]) {
-        setVenues(cachedVenues[selectedType]);
+      if (cachedVenues[selectedType]?.venues) {
+        setVenues(cachedVenues[selectedType].venues);
         setIsInitialLoading(false);
         return;
       }
@@ -118,6 +129,8 @@ export default function VenuesContent() {
           const batchSize = 5;
 
           for (let i = 0; i < places.length; i += batchSize) {
+            if (!isMounted) return;
+
             const batch = places.slice(i, i + batchSize);
             const detailedVenues = await Promise.all(
               batch.map(async (place) => {
@@ -186,6 +199,7 @@ export default function VenuesContent() {
                         ? "Open now"
                         : "Closed",
                     ],
+                    category: selectedType,
                   };
                 } catch (error) {
                   console.error(
@@ -197,28 +211,24 @@ export default function VenuesContent() {
               })
             );
 
-            // Update venues state with new batch, ensuring uniqueness by ID
+            if (!isMounted) return;
+
             const validVenues = detailedVenues.filter(
               (v): v is Venue => v !== null
             );
-            setVenues((prev) => {
-              // Add existing venues
-              prev.forEach((venue) =>
-                uniqueVenues.set(venue.id, venue)
-              );
 
-              // Add new venues (will overwrite if ID exists)
-              validVenues.forEach((venue) =>
-                uniqueVenues.set(venue.id, venue)
-              );
+            validVenues.forEach((venue) =>
+              uniqueVenues.set(venue.id, venue)
+            );
 
-              // Convert back to array
-              return Array.from(uniqueVenues.values());
-            });
+            const currentVenues = Array.from(uniqueVenues.values());
+            setVenues(currentVenues);
           }
         };
 
         do {
+          if (!isMounted) return;
+
           if (nextPageToken) {
             setLoadingMore(true);
             await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -228,30 +238,46 @@ export default function VenuesContent() {
           allResults = [...allResults, ...response.results];
           nextPageToken = response.next_page_token;
 
-          // Process this batch immediately
           await processVenueDetails(response.results);
           setLoadingMore(false);
-        } while (nextPageToken);
+        } while (nextPageToken && isMounted);
 
-        // Update cache at the end of try block
-        const finalVenues = Array.from(uniqueVenues.values());
-        setCachedVenues((prev) => ({
-          ...prev,
-          [selectedType]: finalVenues,
-        }));
+        if (isMounted) {
+          const finalVenues = Array.from(uniqueVenues.values());
+          setCachedVenues((prev) => ({
+            ...prev,
+            [selectedType]: {
+              venues: finalVenues,
+              lastUpdated: new Date(),
+            },
+          }));
+        }
       } catch (err) {
-        console.error("Fetch error:", err);
-        setError(
-          err instanceof Error ? err.message : "Something went wrong"
-        );
+        if (isMounted) {
+          console.error("Fetch error:", err);
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Something went wrong"
+          );
+        }
       } finally {
-        setIsInitialLoading(false);
-        setLoadingMore(false);
+        if (isMounted) {
+          setIsInitialLoading(false);
+          setLoadingMore(false);
+        }
       }
     };
 
     fetchVenues();
-  }, [selectedType, cachedVenues]);
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      controller.abort();
+      setVenues([]);
+    };
+  }, [selectedType]);
 
   return (
     <div>
@@ -260,7 +286,7 @@ export default function VenuesContent() {
           htmlFor="venue-type"
           className="block text-sm font-medium text-gray-700 mb-2"
         >
-          Select Venue Type
+          Select Venue Type ({currentCategoryCount} venues)
         </label>
         <select
           id="venue-type"
@@ -290,7 +316,7 @@ export default function VenuesContent() {
               }
             />
           </div>
-          <VenuesTable venues={venues} />
+          <VenuesTable venues={venues} category={selectedType} />
           {loadingMore && (
             <div className="text-center mt-4 text-gray-600">
               Loading more venues...

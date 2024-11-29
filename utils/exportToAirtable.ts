@@ -1,4 +1,5 @@
 import { AirtableVenue } from "@/types/airtable";
+import { Venue } from "@/types/venue";
 
 export function downloadAirtableCSV(venues: AirtableVenue[]) {
   // Define CSV headers
@@ -53,3 +54,15 @@ export function downloadAirtableCSV(venues: AirtableVenue[]) {
   link.click();
   document.body.removeChild(link);
 }
+
+export const exportToAirtable = async (
+  category: string,
+  venues: Venue[]
+) => {
+  // Only export venues from the specified category
+  const categoryVenues = venues.filter(
+    (venue) => venue.category === category
+  );
+
+  // ... existing export logic using categoryVenues ...
+};
