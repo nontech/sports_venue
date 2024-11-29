@@ -6,10 +6,20 @@ export function downloadAirtableCSV(venues: AirtableVenue[]) {
   const headers = [
     "Venue Name",
     "District",
+    "Latitude",
+    "Longitude",
     "Google Rating",
     "Website Link",
     "Google Maps Link",
     "About",
+    "Opening Hours",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
     "Photos",
   ];
 
@@ -17,11 +27,21 @@ export function downloadAirtableCSV(venues: AirtableVenue[]) {
   const rows = venues.map((venue) => [
     venue["Venue Name"],
     venue["District"],
+    venue["Latitude"],
+    venue["Longitude"],
     venue["Google Rating"] || "",
     venue["Website Link"] || "",
     venue["Google Maps Link"] || "",
     venue["About"] || "",
-    venue["Photos"].map((photo) => photo.url).join("; "),
+    venue["Opening Hours"] || "",
+    venue["Monday"] || "",
+    venue["Tuesday"] || "",
+    venue["Wednesday"] || "",
+    venue["Thursday"] || "",
+    venue["Friday"] || "",
+    venue["Saturday"] || "",
+    venue["Sunday"] || "",
+    "",
   ]);
 
   // Combine headers and rows

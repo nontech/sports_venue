@@ -1,7 +1,10 @@
 import { Venue } from "@/types/venue";
 import { extractDistrict } from "./addressUtils";
+import { parseOpeningHours } from "@/utils/openingHoursUtils";
 
 export function transformVenueForAirtable(venue: Venue) {
+  const dailyHours = parseOpeningHours(venue.opening_hours.hours);
+
   return {
     "Venue Name": venue.name,
     District: extractDistrict(venue.address),
@@ -12,11 +15,13 @@ export function transformVenueForAirtable(venue: Venue) {
     "Google Maps Link": venue.googleMapsUrl || "",
     About: venue.about || "",
     "Opening Hours": venue.opening_hours?.hours?.join(", ") || "",
-    Photos: venue.photos.map((photo, index) => ({
-      url: photo.url,
-      filename: `${venue.name.replace(/\s+/g, "_")}_photo_${
-        index + 1
-      }.jpg`,
-    })),
+    Monday: dailyHours.Monday,
+    Tuesday: dailyHours.Tuesday,
+    Wednesday: dailyHours.Wednesday,
+    Thursday: dailyHours.Thursday,
+    Friday: dailyHours.Friday,
+    Saturday: dailyHours.Saturday,
+    Sunday: dailyHours.Sunday,
+    Photos: [],
   };
 }
