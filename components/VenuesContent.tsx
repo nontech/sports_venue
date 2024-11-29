@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import VenuesTable from "@/components/VenuesTable";
 import MapClient from "@/components/MapClient";
 import { Venue } from "@/types/venue";
-import { CAPE_TOWN_COORDS } from "@/lib/googlePlaces";
+import { CAPE_TOWN_COORDS, SEARCH_RADIUS } from "@/lib/googlePlaces";
 import { scriptLoader } from "@/utils/scriptLoader";
 import { categoryQueries } from "@/utils/categoryQueries";
 
@@ -75,7 +75,7 @@ export default function VenuesContent() {
             const request: ExtendedTextSearchRequest = {
               query: categoryQueries[selectedType] || selectedType,
               location: CAPE_TOWN_COORDS,
-              radius: 35000,
+              radius: SEARCH_RADIUS,
             };
 
             if (pageToken) {
