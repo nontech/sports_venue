@@ -10,7 +10,7 @@ export const categoryQueries: Record<string, string> = {
   "Combat Sports": "martial arts|boxing gym|mma gym",
   Football: "football field|soccer field",
   Golf: "golf course|driving range",
-  Gym: "fitness center|health club|gymnasium -yoga -pilates -boxing -mma -martial -combat",
+  Gym: "commercial gym fitness center Cape Town -yoga -pilates -boxing -crossfit -martial",
   "Horse Riding": "horse riding|equestrian center|stables",
   "Massage Studio": "massage studio|massage therapist",
   Padel: "padel court",

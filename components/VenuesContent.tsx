@@ -17,11 +17,6 @@ declare global {
   }
 }
 
-interface ExtendedTextSearchRequest
-  extends google.maps.places.TextSearchRequest {
-  pageToken?: string;
-}
-
 export default function VenuesContent() {
   // State for venues
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -31,11 +26,7 @@ export default function VenuesContent() {
   const [error, setError] = useState<string | null>(null);
 
   // State for selected venue type
-  const [selectedType, setSelectedType] = useState<string>("Gym");
-
-  // State for Google Maps service
-  const [service, setService] =
-    useState<google.maps.places.PlacesService>();
+  const [selectedType, setSelectedType] = useState<string>("gym");
 
   const currentCategoryCount = venues.length || 0;
 
@@ -44,9 +35,10 @@ export default function VenuesContent() {
 
   // Process venues in smaller batches
   const processVenueDetails = async (
-    places: google.maps.places.PlaceResult[]
+    places: google.maps.places.PlaceResult[],
+    placeService: google.maps.places.PlacesService
   ): Promise<Venue[]> => {
-    if (!service) return [];
+    if (!placeService) return [];
 
     const processedVenues: Venue[] = [];
     const batchSize = 5;
@@ -62,7 +54,7 @@ export default function VenuesContent() {
             const details =
               await new Promise<google.maps.places.PlaceResult>(
                 (resolve, reject) => {
-                  service.getDetails(
+                  placeService.getDetails(
                     {
                       placeId,
                       fields: [
@@ -159,19 +151,22 @@ export default function VenuesContent() {
     return processedVenues;
   };
 
-  // Modify fetchVenuePage to get all results
-  const fetchAllVenues = async () => {
-    if (!service) throw new Error("Places service not initialized");
+  // Fetch all venues
+  const fetchAllVenues = async (
+    placeService: google.maps.places.PlacesService
+  ) => {
+    if (!placeService)
+      throw new Error("Places service not initialized");
 
     return new Promise<google.maps.places.PlaceResult[]>(
       (resolve) => {
         let allResults: google.maps.places.PlaceResult[] = [];
 
-        const searchCallback = (
+        function searchCallback(
           results: google.maps.places.PlaceResult[] | null,
           status: google.maps.places.PlacesServiceStatus,
           pagination: google.maps.places.PlaceSearchPagination | null
-        ) => {
+        ) {
           if (
             status === google.maps.places.PlacesServiceStatus.OK &&
             results
@@ -189,7 +184,7 @@ export default function VenuesContent() {
             if (pagination?.hasNextPage && allResults.length < 60) {
               // Wait 2 seconds before requesting next page
               setTimeout(() => {
-                pagination.nextPage(searchCallback);
+                pagination.nextPage();
               }, 2000);
             } else {
               // No more results or hit limit, resolve with what we have
@@ -199,16 +194,17 @@ export default function VenuesContent() {
             // Error or no results, resolve with what we have
             resolve(allResults);
           }
-        };
+        }
 
-        // Make initial request
         const request: google.maps.places.TextSearchRequest = {
           query: categoryQueries[selectedType] || selectedType,
           location: CAPE_TOWN_COORDS,
           radius: SEARCH_RADIUS,
+          type:
+            selectedType.toLowerCase() === "gym" ? "gym" : undefined,
         };
 
-        service.textSearch(request, searchCallback);
+        placeService.textSearch(request, searchCallback);
       }
     );
   };
@@ -229,12 +225,14 @@ export default function VenuesContent() {
         const map = new window.google.maps.Map(
           document.createElement("div")
         );
-        const newService =
+        const placeService =
           new window.google.maps.places.PlacesService(map);
-        setService(newService);
 
-        const results = await fetchAllVenues();
-        const processedVenues = await processVenueDetails(results);
+        const results = await fetchAllVenues(placeService);
+        const processedVenues = await processVenueDetails(
+          results,
+          placeService
+        );
 
         if (isMounted) {
           setVenues(processedVenues || []);
