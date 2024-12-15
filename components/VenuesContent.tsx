@@ -39,6 +39,9 @@ export default function VenuesContent() {
 
   const currentCategoryCount = venues.length || 0;
 
+  // Add new state for tracking loading count
+  const [loadingCount, setLoadingCount] = useState(0);
+
   // Process venues in smaller batches
   const processVenueDetails = async (
     places: google.maps.places.PlaceResult[]
@@ -168,6 +171,8 @@ export default function VenuesContent() {
             // Add the current results
             allResults = [...allResults, ...results];
 
+            // Update the loading count
+            setLoadingCount(allResults.length);
             console.log(
               `Got ${results.length} results, total now: ${allResults.length}`
             );
@@ -254,7 +259,11 @@ export default function VenuesContent() {
           htmlFor="venue-type"
           className="block text-sm font-medium text-gray-700 mb-2"
         >
-          Select Venue Type ({currentCategoryCount} venues)
+          Select Venue Type (
+          {isInitialLoading
+            ? `Loading (${loadingCount})...`
+            : `${currentCategoryCount} venues`}
+          )
         </label>
         <select
           id="venue-type"
