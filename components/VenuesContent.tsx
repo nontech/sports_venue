@@ -97,17 +97,25 @@ export default function VenuesContent() {
               name: place.name || "Unknown Venue",
               rating: place.rating || 0,
               photos: [
-                ...(
-                  place.photos?.slice(0, 1) ||
-                  details.photos?.slice(0, 1) ||
-                  []
-                ).map((photo) => ({
+                // Get all photos from place
+                ...(place.photos || []).map((photo) => ({
                   reference: "",
                   url: `/api/photo?url=${encodeURIComponent(
                     photo.getUrl?.({ maxWidth: 800 }) || ""
                   )}`,
                 })),
-              ],
+                // Get all photos from details
+                ...(details.photos || []).map((photo) => ({
+                  reference: "",
+                  url: `/api/photo?url=${encodeURIComponent(
+                    photo.getUrl?.({ maxWidth: 800 }) || ""
+                  )}`,
+                })),
+              ].filter(
+                // Remove duplicates based on URL
+                (photo, index, self) =>
+                  index === self.findIndex((p) => p.url === photo.url)
+              ),
               district: place.vicinity || "",
               website: details.website || "",
               googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${placeId}`,
