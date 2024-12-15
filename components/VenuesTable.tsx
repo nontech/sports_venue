@@ -233,46 +233,48 @@ VenuesTableProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="grid grid-cols-3 gap-4 w-[400px]">
-                        {venue.photos.map((photo, index) => (
-                          <div
-                            key={index}
-                            className="relative group"
-                            style={{ height: "100px" }}
-                          >
-                            <div className="w-full h-full relative rounded-lg overflow-hidden">
-                              <Image
-                                src={photo.url}
-                                alt={`${venue.name} photo ${
-                                  index + 1
-                                }`}
-                                fill
-                                className="object-cover hover:scale-105 transition-transform duration-200"
-                                sizes="(max-width: 768px) 33vw, (max-width: 1200px) 25vw, 20vw"
-                              />
-                            </div>
-                            <button
-                              id={`download-btn-${index}`}
-                              onClick={() =>
-                                handlePhotoDownload(
-                                  photo.url,
-                                  venue.name,
-                                  index
-                                )
-                              }
-                              className="absolute inset-0 bg-black bg-opacity-50 text-white 
+                      <div className="w-[150px]">
+                        {venue.photos
+                          .slice(0, 1)
+                          .map((photo, index) => (
+                            <div
+                              key={index}
+                              className="relative group"
+                              style={{ height: "100px" }}
+                            >
+                              <div className="w-full h-full relative rounded-lg overflow-hidden">
+                                <Image
+                                  src={photo.url}
+                                  alt={`${venue.name} photo ${
+                                    index + 1
+                                  }`}
+                                  fill
+                                  className="object-cover hover:scale-105 transition-transform duration-200"
+                                  sizes="(max-width: 768px) 33vw, (max-width: 1200px) 25vw, 20vw"
+                                />
+                              </div>
+                              <button
+                                id={`download-btn-${index}`}
+                                onClick={() =>
+                                  handlePhotoDownload(
+                                    photo.url,
+                                    venue.name,
+                                    index
+                                  )
+                                }
+                                className="absolute inset-0 bg-black bg-opacity-50 text-white 
                                        opacity-0 group-hover:opacity-100 transition-opacity
                                        flex flex-col items-center justify-center text-sm rounded-lg"
-                            >
-                              <span className="text-2xl mb-1">
-                                ⬇️
-                              </span>
-                              <span className="text-xs">
-                                Download
-                              </span>
-                            </button>
-                          </div>
-                        ))}
+                              >
+                                <span className="text-2xl mb-1">
+                                  ⬇️
+                                </span>
+                                <span className="text-xs">
+                                  Download
+                                </span>
+                              </button>
+                            </div>
+                          ))}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

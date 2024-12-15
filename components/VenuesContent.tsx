@@ -17,35 +17,23 @@ declare global {
   }
 }
 
-// interface CachedVenues {
-//   [category: string]: {
-//     venues: Venue[];
-//     lastUpdated: Date;
-//   };
-// }
-
-// interface PlacesResponse {
-//   results: google.maps.places.PlaceResult[];
-//   next_page_token?: string;
-// }
-
 interface ExtendedTextSearchRequest
   extends google.maps.places.TextSearchRequest {
   pageToken?: string;
 }
 
-// const wait = (ms: number) =>
-//   new Promise((resolve) => setTimeout(resolve, ms));
-
 export default function VenuesContent() {
+  // State for venues
   const [venues, setVenues] = useState<Venue[]>([]);
+
+  // State for loading and error
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // State for selected venue type
   const [selectedType, setSelectedType] = useState<string>("Gym");
-  // const [cachedVenues, setCachedVenues] = useState<CachedVenues>({});
-  const [pageToken, setPageToken] = useState<string | undefined>();
-  const [hasNextPage, setHasNextPage] = useState(false);
+
+  // State for Google Maps service
   const [service, setService] =
     useState<google.maps.places.PlacesService>();
 
@@ -78,7 +66,7 @@ export default function VenuesContent() {
                         "website",
                         "formatted_address",
                         "opening_hours",
-                        "photos",
+                        "photo",
                       ],
                     },
                     (result, status) => {
@@ -100,30 +88,23 @@ export default function VenuesContent() {
                 }
               );
 
+            // Return the venue object
             return {
               id: placeId,
               name: place.name || "Unknown Venue",
               rating: place.rating || 0,
               photos: [
-                // Photos from initial search
-                ...(place.photos || []).map((photo) => ({
+                ...(
+                  place.photos?.slice(0, 1) ||
+                  details.photos?.slice(0, 1) ||
+                  []
+                ).map((photo) => ({
                   reference: "",
                   url: `/api/photo?url=${encodeURIComponent(
                     photo.getUrl?.({ maxWidth: 800 }) || ""
                   )}`,
                 })),
-                // Photos from details
-                ...(details.photos || []).map((photo) => ({
-                  reference: "",
-                  url: `/api/photo?url=${encodeURIComponent(
-                    photo.getUrl?.({ maxWidth: 800 }) || ""
-                  )}`,
-                })),
-              ].filter(
-                (photo, index, self) =>
-                  // Remove duplicates based on URL
-                  index === self.findIndex((p) => p.url === photo.url)
-              ),
+              ],
               district: place.vicinity || "",
               website: details.website || "",
               googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${placeId}`,
@@ -156,61 +137,70 @@ export default function VenuesContent() {
         })
       );
 
+      // Filter out null venues
       const validVenues = detailedVenues.filter(
         (v): v is Venue => v !== null
       );
+      // Add valid venues to the processedVenues array
       processedVenues.push(...validVenues);
     }
-
+    // Return the processed venues
     return processedVenues;
   };
 
-  // Function to fetch venues for a single page
-  const fetchVenuePage = async (token?: string) => {
+  // Modify fetchVenuePage to get all results
+  const fetchAllVenues = async () => {
     if (!service) throw new Error("Places service not initialized");
 
-    const request: ExtendedTextSearchRequest = {
-      query: categoryQueries[selectedType] || selectedType,
-      location: CAPE_TOWN_COORDS,
-      radius: SEARCH_RADIUS,
-      pageToken: token,
-    };
+    return new Promise<google.maps.places.PlaceResult[]>(
+      (resolve) => {
+        let allResults: google.maps.places.PlaceResult[] = [];
 
-    console.log("Fetching venues with token:", token);
+        const searchCallback = (
+          results: google.maps.places.PlaceResult[] | null,
+          status: google.maps.places.PlacesServiceStatus,
+          pagination: google.maps.places.PlaceSearchPagination | null
+        ) => {
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            results
+          ) {
+            // Add the current results
+            allResults = [...allResults, ...results];
 
-    return new Promise<{
-      results: google.maps.places.PlaceResult[];
-      hasMore: boolean;
-      nextToken?: string;
-    }>((resolve, reject) => {
-      service.textSearch(request, (results, status, pagination) => {
-        if (
-          status === google.maps.places.PlacesServiceStatus.OK &&
-          results
-        ) {
-          console.log("Received results:", results.length);
-          console.log("Has next page:", !!pagination?.hasNextPage);
+            console.log(
+              `Got ${results.length} results, total now: ${allResults.length}`
+            );
 
-          resolve({
-            results,
-            hasMore: !!pagination?.hasNextPage,
-            nextToken: "next-page", // Keep this simple token
-          });
-
-          if (pagination?.hasNextPage) {
-            pagination.nextPage();
+            // If we have more pages and haven't hit 60 results yet
+            if (pagination?.hasNextPage && allResults.length < 60) {
+              // Wait 2 seconds before requesting next page
+              setTimeout(() => {
+                pagination.nextPage(searchCallback);
+              }, 2000);
+            } else {
+              // No more results or hit limit, resolve with what we have
+              resolve(allResults);
+            }
+          } else {
+            // Error or no results, resolve with what we have
+            resolve(allResults);
           }
-        } else {
-          reject(new Error(`Places API error: ${status}`));
-        }
-      });
-    });
+        };
+
+        // Make initial request
+        const request: google.maps.places.TextSearchRequest = {
+          query: categoryQueries[selectedType] || selectedType,
+          location: CAPE_TOWN_COORDS,
+          radius: SEARCH_RADIUS,
+        };
+
+        service.textSearch(request, searchCallback);
+      }
+    );
   };
 
-  // Effect to handle initial load and category changes
-  /* eslint-disable-next-line react-hooks/exhaustive-deps -- 
-     Intentionally omitting fetchVenuePage and processVenueDetails to prevent unnecessary rerenders 
-  */
+  // Update the initial load effect
   useEffect(() => {
     let isMounted = true;
 
@@ -218,11 +208,7 @@ export default function VenuesContent() {
       try {
         setIsInitialLoading(true);
         setError(null);
-        setVenues([]);
-        setPageToken(undefined);
-        setHasNextPage(false);
 
-        // Load Google Maps if needed
         await scriptLoader.loadScript(
           `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
         );
@@ -234,21 +220,11 @@ export default function VenuesContent() {
           new window.google.maps.places.PlacesService(map);
         setService(newService);
 
-        // Fetch first page using the new service
-        const { results, hasMore, nextToken } =
-          await fetchVenuePage();
+        const results = await fetchAllVenues();
         const processedVenues = await processVenueDetails(results);
 
         if (isMounted) {
-          // Ensure uniqueness when setting initial venues
-          const uniqueVenues = new Map<string, Venue>();
-          processedVenues?.forEach((venue) => {
-            if (venue) uniqueVenues.set(venue.id, venue);
-          });
-
-          setVenues(Array.from(uniqueVenues.values()));
-          setHasNextPage(hasMore);
-          setPageToken(nextToken);
+          setVenues(processedVenues || []);
         }
       } catch (err) {
         if (isMounted) {
@@ -270,75 +246,6 @@ export default function VenuesContent() {
       isMounted = false;
     };
   }, [selectedType]);
-
-  // Effect to handle pagination
-  /* eslint-disable-next-line react-hooks/exhaustive-deps -- 
-     Intentionally omitting fetchVenuePage, loadingMore, and processVenueDetails to maintain current behavior 
-  */
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadMoreVenues = async () => {
-      if (!hasNextPage || !pageToken || loadingMore) return;
-
-      try {
-        console.log("Starting to fetch all venues...");
-        setLoadingMore(true);
-
-        // Temporary storage for all venues
-        let allNewVenues: Venue[] = [];
-        let shouldContinue = true;
-        let pageCount = 0;
-
-        // First, get all the venues
-        while (shouldContinue && pageCount < 3 && isMounted) {
-          console.log(`Fetching page ${pageCount + 1}...`);
-          const { results, hasMore } = await fetchVenuePage(
-            pageCount === 0 ? undefined : "next-page"
-          );
-
-          const processedVenues = await processVenueDetails(results);
-          if (processedVenues) {
-            allNewVenues = [...allNewVenues, ...processedVenues];
-            console.log(
-              `Accumulated ${allNewVenues.length} venues so far`
-            );
-          }
-
-          shouldContinue = hasMore;
-          pageCount++;
-        }
-
-        if (isMounted) {
-          // Set all venues at once, no merging with previous
-          setVenues(allNewVenues);
-          console.log(`Final total venues: ${allNewVenues.length}`);
-
-          // Reset pagination state
-          setHasNextPage(false);
-          setPageToken(undefined);
-        }
-      } catch (err) {
-        console.error("Error loading venues:", err);
-        if (isMounted) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Something went wrong"
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingMore(false);
-        }
-      }
-    };
-
-    loadMoreVenues();
-    return () => {
-      isMounted = false;
-    };
-  }, [pageToken, hasNextPage]);
 
   return (
     <div>
@@ -382,11 +289,6 @@ export default function VenuesContent() {
               a.name.localeCompare(b.name)
             )}
           />
-          {loadingMore && (
-            <div className="text-center mt-4 text-gray-600">
-              Loading more venues...
-            </div>
-          )}
         </>
       )}
       {error && <div className="text-red-500">{error}</div>}
